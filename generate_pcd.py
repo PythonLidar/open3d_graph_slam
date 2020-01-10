@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 import os
 import csv
 import math
@@ -26,17 +26,17 @@ def generate_pcd(path):
 	vecs = numpy.float32(vecs)
 
 	for image_file in image_files:
-		print image_file
-		image = numpy.asarray(open3d.read_image(image_file)).flatten()
+		print(image_file)
+		image = numpy.asarray(open3d.io.read_image(image_file)).flatten()
 
 		points = (vecs.T * (image / 500.0).flatten()).T
 
 		cloud = open3d.geometry.PointCloud()
-		cloud.points = open3d.Vector3dVector(points)
-		open3d.estimate_normals(cloud, search_param=open3d.KDTreeSearchParamHybrid(radius=0.2, max_nn=30))
+		cloud.points = open3d.utility.Vector3dVector(points)
+		cloud.estimate_normals(search_param=open3d.geometry.KDTreeSearchParamHybrid(radius=0.2, max_nn=30))
 
 		dst_filename = image_file[:-4] + '.pcd'
-		open3d.write_point_cloud(dst_filename, cloud)
+		open3d.io.write_point_cloud(dst_filename, cloud)
 
 
 def yawpitch2_vec(yaw, pitch):
@@ -52,6 +52,7 @@ def yawpitch2_vec(yaw, pitch):
 
 def main():
 	generate_pcd('/home/koide/datasets/kit/scenario1')
+
 
 if __name__ == '__main__':
 	main()
