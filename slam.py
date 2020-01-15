@@ -41,8 +41,6 @@ class GraphSLAM(object):
 		self.keyframes = []
 		self.last_frame_transformation = numpy.identity(4)
 
-		self.odom = numpy.identity(4)
-
 		self.keyframe_angle_thresh_deg = 15.0
 		self.keyframe_trans_thresh_m = 1.0
 
@@ -63,11 +61,11 @@ class GraphSLAM(object):
 
 		print('optimizing...')
 		option = open3d.registration.GlobalOptimizationOption(max_correspondence_distance=1.0,
-															  edge_prune_threshold=0.25, reference_node=0)
+								      edge_prune_threshold=0.25, reference_node=0)
 		print(open3d.registration.global_optimization(self.graph,
-													  open3d.registration.GlobalOptimizationLevenbergMarquardt(),
-													  open3d.registration.GlobalOptimizationConvergenceCriteria(),
-													  option))
+							      open3d.registration.GlobalOptimizationLevenbergMarquardt(),
+							      open3d.registration.GlobalOptimizationConvergenceCriteria(),
+							      option))
 
 		for keyframe in self.keyframes:
 			keyframe.update_transformed()
@@ -78,11 +76,11 @@ class GraphSLAM(object):
 	def update_keyframe(self, cloud):
 		criteria = open3d.registration.ICPConvergenceCriteria(max_iteration=100)
 		reg = open3d.registration.registration_icp(cloud,
-												   self.keyframes[-1].cloud,
-												   1.0,
-												   self.last_frame_transformation,
-												   open3d.registration.TransformationEstimationPointToPlane(),
-												   criteria=criteria)
+							   self.keyframes[-1].cloud,
+							   1.0,
+							   self.last_frame_transformation,
+							   open3d.registration.TransformationEstimationPointToPlane(),
+							   criteria=criteria)
 
 		angle = pyquaternion.Quaternion(matrix=reg.transformation[:3, :3]).degrees
 		trans = numpy.linalg.norm(reg.transformation[:3, 3])
@@ -91,22 +89,22 @@ class GraphSLAM(object):
 			self.last_frame_transformation = reg.transformation
 			return False
 
-		self.odom = numpy.dot(self.keyframes[-1].odom, reg.transformation)
-		self.keyframes.append(Keyframe(len(self.keyframes), cloud, self.odom))
+		odom = numpy.dot(self.keyframes[-1].odom, reg.transformation)
+		self.keyframes.append(Keyframe(len(self.keyframes), cloud, odom))
 		self.graph.nodes.append(self.keyframes[-1].node)
 		self.vis.add_geometry(self.keyframes[-1].transformed)
 
 		self.last_frame_transformation = numpy.identity(4)
 
 		information = open3d.registration.get_information_matrix_from_point_clouds(self.keyframes[-1].cloud,
-																				   self.keyframes[-2].cloud,
-																				   1.0,
-																				   reg.transformation)
+											   self.keyframes[-2].cloud,
+											   1.0,
+											   reg.transformation)
 		edge = open3d.registration.PoseGraphEdge(self.keyframes[-1].id,
-												 self.keyframes[-2].id,
-												 reg.transformation,
-												 information,
-												 uncertain=False)
+							 self.keyframes[-2].id,
+							 reg.transformation,
+							 information,
+							 uncertain=False)
 
 		self.graph.edges.append(edge)
 
